@@ -21,9 +21,11 @@
 
 //theres
 //10.19.190.142
+//justin
 
 //ours
 //10.19.186.162
+//nikhil
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UITextField *textField;
@@ -42,12 +44,13 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.ipAddress = @"10.19.186.162";
+    self.ipAddress = @"10.19.190.142";
     self.userName = @"justin";
     self.paused = false;
     self.previousOffset = -1;
     self.UID = arc4random_uniform(NSIntegerMax);
     self.lastPauseTime = [NSDate date];
+    [self clearChatMessage];
     
     [PubNub setDelegate:self];
     PNConfiguration* config = [PNConfiguration configurationForOrigin:@"pubsub.pubnub.com" publishKey:@"pub-c-801f07a5-e818-4617-9a92-6618a320091d" subscribeKey:@"sub-c-a2c74070-b9b3-11e4-bdc7-02ee2ddab7fe" secretKey:@"sec-c-OTZlYWEyYjItYTE5ZC00MmNjLWIwNmYtZWQ3MTdhMTU2MDA5"];
@@ -108,10 +111,20 @@
     }
     
     if([messageDict[@"msg"] isEqualToString:pauseMessage] && ![[NSNumber numberWithInt:self.UID] isEqualToNumber:messageDict[@"id"]]) {
+        [self goToOffset:messageDict[@"offset"]];
         [self pauseTV];
     }
 }
 
+- (void)goToOffset:(NSNumber*) offset {
+    NSString* url = [NSString stringWithFormat:@"http://%@:8080/dvr/play?uniqueId=%@&playFrom=offset&offset=%@", self.ipAddress, self.currentShowID, offset];
+    AFHTTPRequestOperationManager* manager = [AFHTTPRequestOperationManager manager];
+    [manager GET:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        NSLog(@"jumpedToOffset");
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        NSLog(@"failed");
+    }];
+}
 
 /**pubnub delegate methods*/
 - (void)pubnubClient:(PubNub *)client didConnectToOrigin:(NSString *)origin {
