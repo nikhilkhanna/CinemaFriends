@@ -17,15 +17,15 @@
 #import "PNMessage+Protected.h"
 #import "PubNub+Protected.h"
 
-#define pauseMessage @"*Pause has been toggled*"
+#define pauseMessage @" ** Toggled Pause **"
 
-//theres
+//theirs
 //10.19.190.142
 //justin
 
 //ours
 //10.19.186.162
-//nikhil
+//john
 
 @interface ViewController ()
 @property (weak, nonatomic) IBOutlet UITextField *textField;
@@ -44,8 +44,8 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.ipAddress = @"10.19.190.142";
-    self.userName = @"justin";
+    self.ipAddress = @"10.19.186.162";
+    self.userName = @"Nikhil";
     self.paused = false;
     self.previousOffset = -1;
     self.UID = arc4random_uniform(NSIntegerMax);
@@ -93,7 +93,7 @@
     NSDictionary* messageDict = message.message;
     
     if(message.message[@"msg"] != nil) {
-        NSString* paramURL = [NSString stringWithFormat:@"http://nikhilkhanna.github.io/?chat=%@", message.message[@"msg"]];
+        NSString* paramURL = [NSString stringWithFormat:@"http://nikhilkhanna.github.io/?chat=%@&name=%@", message.message[@"msg"], self.userName];
         NSLog(@"paramurl: %@", paramURL);
         paramURL = [self urlencode:paramURL];
         //NSLog(@"%@", paramURL);
@@ -117,6 +117,8 @@
 }
 
 - (void)goToOffset:(NSNumber*) offset {
+    int correctionAmount = 2;
+    NSNumber* correctedOffset = [NSNumber numberWithInt:[offset intValue]-correctionAmount];
     NSString* url = [NSString stringWithFormat:@"http://%@:8080/dvr/play?uniqueId=%@&playFrom=offset&offset=%@", self.ipAddress, self.currentShowID, offset];
     AFHTTPRequestOperationManager* manager = [AFHTTPRequestOperationManager manager];
     [manager GET:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
@@ -219,7 +221,7 @@
 }
 
 - (void)sendChatMessage:(NSString *)message {
-    NSString* realmessage = [NSString stringWithFormat:@"%@: %@", self.userName, message];
+    NSString* realmessage = [NSString stringWithFormat:@"%@", message];
     NSDictionary* messageDict = @{@"id": [NSNumber numberWithInt:self.UID], @"msg": realmessage};
     [PubNub sendMessage:messageDict toChannel:self.currentChannel compressed:NO withCompletionBlock:^(PNMessageState state, id data) {
         if(state == PNMessageSent) {
