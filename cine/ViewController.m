@@ -17,7 +17,7 @@
 #import "PNMessage+Protected.h"
 #import "PubNub+Protected.h"
 
-#define pauseMessage @"*Show has been paused*"
+#define pauseMessage @"*Pause has been toggled*"
 
 //theres
 //10.19.190.142
@@ -35,6 +35,7 @@
 @property NSString* ipAddress;
 @property NSDate* lastPauseTime;
 @property NSString* userName;
+@property NSString* currentShowID;
 @end
 
 @implementation ViewController
@@ -42,11 +43,11 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     self.ipAddress = @"10.19.186.162";
+    self.userName = @"justin";
     self.paused = false;
     self.previousOffset = -1;
     self.UID = arc4random_uniform(NSIntegerMax);
     self.lastPauseTime = [NSDate date];
-    self.userName = @"nikhil";
     
     [PubNub setDelegate:self];
     PNConfiguration* config = [PNConfiguration configurationForOrigin:@"pubsub.pubnub.com" publishKey:@"pub-c-801f07a5-e818-4617-9a92-6618a320091d" subscribeKey:@"sub-c-a2c74070-b9b3-11e4-bdc7-02ee2ddab7fe" secretKey:@"sec-c-OTZlYWEyYjItYTE5ZC00MmNjLWIwNmYtZWQ3MTdhMTU2MDA5"];
@@ -79,7 +80,7 @@
 - (void)pubnubClient:(PubNub *)client didSubscribeOnChannels:(NSArray *)channels {
     NSLog(@"DELEGATE: Subscribed to channel:%@", channels);
     self.currentChannel = channels[0];
-    NSTimer* myTimer = [NSTimer scheduledTimerWithTimeInterval: 3 target: self
+    NSTimer* myTimer = [NSTimer scheduledTimerWithTimeInterval: 5 target: self
                                                       selector: @selector(queryPaused:) userInfo: nil repeats: YES];
     
 }
@@ -121,8 +122,8 @@
     [self sendChatMessage:self.textField.text];
 }
 
--(void)tellOthersToTogglePause {
-    NSDictionary* messageDict = @{@"id": [NSNumber numberWithInt:self.UID], @"msg": pauseMessage};
+-(void)tellOthersToTogglePause:(int)offset {
+    NSDictionary* messageDict = @{@"id": [NSNumber numberWithInt:self.UID], @"msg": pauseMessage, @"offset": [NSNumber numberWithInt:offset]};
     [PubNub sendMessage:messageDict toChannel:self.currentChannel compressed:NO withCompletionBlock:^(PNMessageState state, id data) {
         if(state == PNMessageSent) {
             NSLog(@"OBSERVER: Sent Message!");
@@ -151,6 +152,7 @@
     [manager GET:url parameters:nil success:^(AFHTTPRequestOperation *operation, id responseObject) {
         NSDictionary* res = responseObject;
         NSString* offsetString = res[@"offset"];
+        self.currentShowID = res[@"uniqueId"];
         int offset = [offsetString intValue];
         
         if(-([self.lastPauseTime timeIntervalSinceNow]) > 4) {
@@ -159,14 +161,14 @@
             if(offset == self.previousOffset && !self.paused) {
                 self.lastPauseTime = [NSDate date];
                 self.paused = true;
-                [self tellOthersToTogglePause];
+                [self tellOthersToTogglePause:offset];
             }
             
             //client just resumed after having it be paused
             if(offset != self.previousOffset && self.paused) {
                 self.lastPauseTime = [NSDate date];
                 self.paused = false;
-                [self tellOthersToTogglePause];
+                [self tellOthersToTogglePause:offset];
             }
         }
         
