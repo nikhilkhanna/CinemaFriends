@@ -7,9 +7,10 @@
 //
 
 #import <UIKit/UIKit.h>
+#import <PubNub/PubNub.h>
+@interface ViewController : UIViewController <PNDelegate>
 
-@interface ViewController : UIViewController
-
+-(IBAction)sendMessage:(id)sender;
 
 @end
 
